@@ -19,6 +19,10 @@ func (a *application) routes() *chi.Mux {
 	a.App.Routes.Get("/jet-page", a.Handlers.JetPage)
 	a.App.Routes.Get("/sessions", a.Handlers.SessionPage)
 
+	a.App.Routes.Get("/users/login", a.Handlers.UserLogin)
+	a.App.Routes.Post("/users/login", a.Handlers.PostUserLogin)
+	a.App.Routes.Get("/users/logout", a.Handlers.Logout)
+
 	a.App.Routes.Get("/create-user", func(w http.ResponseWriter, r *http.Request) {
 		firstName := a.App.RandomString(5)
 		lastName := a.App.RandomString(5)
