@@ -13,10 +13,9 @@ import (
 )
 
 type Token struct {
-	ID        int       `db:"id" json:"id"`
-	UserID    string    `db:"user_id" json:"user_id"`
+	ID        int       `db:"id,omitempty" json:"id"`
+	UserID    int       `db:"user_id" json:"user_id"`
 	FirstName string    `db:"first_name" json:"first_name"`
-	LastName  string    `db:"last_name" json:"last_name"`
 	Email     string    `db:"email" json:"email"`
 	PlainText string    `db:"token" json:"token"`
 	Hash      []byte    `db:"token_hash" json:"-"`
@@ -116,7 +115,7 @@ func (t *Token) DeleteByToken(plainText string) error {
 func (t *Token) Insert(token Token, u User) error {
 	collection := upper.Collection(t.Table())
 
-	// delete existing tokne
+	// delete existing tokens
 	res := collection.Find(up.Cond{"user_id": u.ID})
 	err := res.Delete()
 	if err != nil {
@@ -138,7 +137,7 @@ func (t *Token) Insert(token Token, u User) error {
 
 func (t *Token) GenerateToken(userID int, ttl time.Duration) (*Token, error) {
 	token := &Token{
-		UserID:  t.UserID,
+		UserID:  userID,
 		Expires: time.Now().Add(ttl),
 	}
 
@@ -158,15 +157,16 @@ func (t *Token) GenerateToken(userID int, ttl time.Duration) (*Token, error) {
 func (t *Token) AuthenticateToken(r *http.Request) (*User, error) {
 	authorizationHeader := r.Header.Get("Authorization")
 	if authorizationHeader == "" {
-		return nil, errors.New("no authorizaiton header received")
+		return nil, errors.New("no authorization header received")
 	}
 
 	headerParts := strings.Split(authorizationHeader, " ")
 	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-		return nil, errors.New("no authorizaiton header received")
+		return nil, errors.New("no authorization header received")
 	}
 
 	token := headerParts[1]
+
 	if len(token) != 26 {
 		return nil, errors.New("token wrong size")
 	}

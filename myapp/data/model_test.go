@@ -10,8 +10,11 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	fakeDB, _, _ := sqlmock.New()
+	fakeDB, mock, _ := sqlmock.New()
 	defer fakeDB.Close()
+
+	mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("test"))
+	mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("test"))
 
 	_ = os.Setenv("DATATYPE_TYPE", "postgres")
 	m := New(fakeDB)
