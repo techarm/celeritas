@@ -1,1 +1,1 @@
--- DROP TABLE table_name;
+-- DROP TABLE some_table;
