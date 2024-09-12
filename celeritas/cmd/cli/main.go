@@ -48,7 +48,6 @@ func main() {
 			exitGracefully(err)
 		}
 
-		message = "Created new migration files."
 	default:
 		showHelp()
 	}
