@@ -47,7 +47,7 @@ func doMake(arg2, arg3 string) error {
 
 		fileName := cel.RootPath + "/handlers/" + strings.ToLower(arg3) + ".go"
 		if fileExists(fileName) {
-			return errors.New(fileName + "already exists")
+			return errors.New(fileName + " already exists")
 		}
 
 		data, err := templateFS.ReadFile("templates/handlers/handler.go.txt")
@@ -87,10 +87,20 @@ func doMake(arg2, arg3 string) error {
 		}
 
 		fileName := cel.RootPath + "/data/" + strings.ToLower(modelName) + ".go"
+		if fileExists(fileName) {
+			return errors.New(fileName + " already exists")
+		}
+
 		model = strings.ReplaceAll(model, "$MODEL_NAME$", strcase.ToCamel(modelName))
 		model = strings.ReplaceAll(model, "$TABLE_NAME$", tableName)
 
 		err = copyDataToFile([]byte(model), fileName)
+		if err != nil {
+			return err
+		}
+
+	case "session":
+		err := doSessionTable()
 		if err != nil {
 			return err
 		}
