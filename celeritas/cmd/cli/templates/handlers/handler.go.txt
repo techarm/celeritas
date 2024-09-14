@@ -5,6 +5,6 @@ import (
 )
 
 // $HANDLER_NAME$ comment goes here
-func (h *Handler) $HANDLER_NAME$(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) $HANDLER_NAME$(w http.ResponseWriter, r *http.Request) {
 
 }
