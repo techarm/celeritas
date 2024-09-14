@@ -22,6 +22,8 @@ func (a *application) routes() *chi.Mux {
 	a.App.Routes.Get("/users/login", a.Handlers.UserLogin)
 	a.App.Routes.Post("/users/login", a.Handlers.PostUserLogin)
 	a.App.Routes.Get("/users/logout", a.Handlers.Logout)
+	a.App.Routes.Get("/form", a.Handlers.FormvalHandlers)
+	a.App.Routes.Post("/form", a.Handlers.SubmitForm)
 
 	a.App.Routes.Get("/create-user", func(w http.ResponseWriter, r *http.Request) {
 		firstName := a.App.RandomString(5)
@@ -77,6 +79,15 @@ func (a *application) routes() *chi.Mux {
 		}
 
 		u.LastName = a.App.RandomString(10)
+		u.LastName = ""
+		validator := a.App.Validator(nil)
+		u.Validate(validator)
+
+		if !validator.Valid() {
+			fmt.Fprint(w, "validation error")
+			return
+		}
+
 		err = u.Update(*u)
 		if err != nil {
 			a.App.ErrorLog.Println(err)

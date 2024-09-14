@@ -3,14 +3,16 @@ package main
 import (
 	"myapp/data"
 	"myapp/handlers"
+	"myapp/middleware"
 
 	"github.com/techarm/celeritas"
 )
 
 type application struct {
-	App      *celeritas.Celeritas
-	Handlers *handlers.Handlers
-	Models   data.Models
+	App        *celeritas.Celeritas
+	Middleware *middleware.Middleware
+	Handlers   *handlers.Handlers
+	Models     data.Models
 }
 
 func main() {
