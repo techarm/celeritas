@@ -30,6 +30,12 @@ func (a *application) routes() *chi.Mux {
 	a.get("/download-file", a.Handlers.DownloadFile)
 	a.get("/crypto", a.Handlers.TestCrypto)
 
+	a.get("/cache", a.Handlers.ShowCachePage)
+	a.post("/api/save-in-cache", a.Handlers.SaveInCache)
+	a.post("/api/get-from-cache", a.Handlers.GetFromCache)
+	a.post("/api/delete-from-cache", a.Handlers.DeleteFromCache)
+	a.post("/api/empty-cache", a.Handlers.EmptyCache)
+
 	a.get("/create-user", func(w http.ResponseWriter, r *http.Request) {
 		firstName := a.App.RandomString(5)
 		lastName := a.App.RandomString(5)
