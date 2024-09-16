@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/techarm/celeritas"
 	up "github.com/upper/db/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,6 +23,13 @@ type User struct {
 
 func (u *User) Table() string {
 	return "users"
+}
+
+func (u *User) Validate(validator *celeritas.Validation) {
+	validator.Check(u.LastName != "", "last_name", "Last name must be provided")
+	validator.Check(u.FirstName != "", "first_name", "First name must be provided")
+	validator.Check(u.Email != "", "email", "Email must be provided")
+	validator.IsEmail("email", u.Email)
 }
 
 func (u *User) GetAll() ([]*User, error) {
@@ -163,4 +171,12 @@ func (u *User) PasswordMatches(plainText string) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func (u *User) CheckForRememberToken(id int, token string) bool {
+	var rememberToken RemeberToken
+	rt := RemeberToken{}
+	collection := upper.Collection(rt.Table())
+	res := collection.Find(up.Cond{"user_id": id, "remember_token": token})
+	return res.One(&rememberToken) == nil
 }
