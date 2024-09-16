@@ -30,12 +30,12 @@ func doNew(appName string) error {
 	// git clone the skeleton application
 	color.Green("\t Cloning repository...")
 	_, err := git.PlainClone("./"+appName, false, &git.CloneOptions{
-		URL:      "git@github.com/techarm/techarm/celeritas-app.git",
+		URL:      "https://github.com/techarm/celeritas-app.git",
 		Progress: os.Stdout,
 		Depth:    1,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("git clone error: %v", err)
 	}
 
 	// remove .git directory
@@ -79,7 +79,7 @@ func doNew(appName string) error {
 			return err
 		}
 	} else {
-		source, err := os.Open(fmt.Sprintf("./%s/Makefile.mac", appName))
+		source, err := os.Open(fmt.Sprintf("./%s/Makefile.linux", appName))
 		if err != nil {
 			return err
 		}
@@ -96,14 +96,14 @@ func doNew(appName string) error {
 			return err
 		}
 	}
-	_ = os.Remove("./" + appName + "/Makefile.mac")
+	_ = os.Remove("./" + appName + "/Makefile.linux")
 	_ = os.Remove("./" + appName + "/Makefile.windows")
 
 	// update the go.mod file
 	color.Yellow("\tCreating go.mod file...")
 	_ = os.Remove("./" + appName + "/go.mod")
 
-	data, err = templateFS.ReadFile("/templates/go.mod.txt")
+	data, err = templateFS.ReadFile("templates/go.mod.txt")
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func doNew(appName string) error {
 	mod := string(data)
 	mod = strings.ReplaceAll(mod, "${APP_NAME}", appURL)
 
-	err = copyDataToFile([]byte(mod), "./"+appName+"go.mod")
+	err = copyDataToFile([]byte(mod), "./"+appName+"/go.mod")
 	if err != nil {
 		return err
 	}

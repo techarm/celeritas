@@ -22,7 +22,7 @@ import (
 	"github.com/techarm/celeritas/session"
 )
 
-const version = "1.0.0"
+const version = "0.1.0"
 
 var myRedisCache *cache.RedisCache
 var myBadgerCache *cache.BadgerCache

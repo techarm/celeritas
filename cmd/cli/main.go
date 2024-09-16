@@ -14,6 +14,8 @@ var cel celeritas.Celeritas
 
 func main() {
 	var message string
+	var err error
+
 	arg1, arg2, arg3, err := validateInput()
 	if err != nil {
 		exitGracefully(err)
@@ -63,7 +65,9 @@ func main() {
 		showHelp()
 	}
 
-	exitGracefully(nil, message)
+	if err != nil || message != "" {
+		exitGracefully(err, message)
+	}
 }
 
 func validateInput() (string, string, string, error) {

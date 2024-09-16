@@ -61,17 +61,17 @@ func doAuth() error {
 		return err
 	}
 
-	err = copyFileFromTemplate("templates/handler/auth-handlers.go.txt", cel.RootPath+"/handler/auth-handlers.go")
+	err = copyFileFromTemplate("templates/handlers/auth-handlers.go.txt", cel.RootPath+"/handlers/auth-handlers.go")
 	if err != nil {
 		return err
 	}
 
-	err = copyFileFromTemplate("templates/mailer/password-reset.html.tmlp", cel.RootPath+"/mail/password-reset.html.tmpl")
+	err = copyFileFromTemplate("templates/mailer/password-reset.html.tmpl", cel.RootPath+"/mail/password-reset.html.tmpl")
 	if err != nil {
 		return err
 	}
 
-	err = copyFileFromTemplate("templates/mailer/password-reset.plain.tmlp", cel.RootPath+"/mail/password-reset.plain.tmpl")
+	err = copyFileFromTemplate("templates/mailer/password-reset.plain.tmpl", cel.RootPath+"/mail/password-reset.plain.tmpl")
 	if err != nil {
 		return err
 	}
