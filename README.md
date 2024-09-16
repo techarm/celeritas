@@ -1,1 +1,1 @@
-# Celeritas skeleton project
+# Celeritas
