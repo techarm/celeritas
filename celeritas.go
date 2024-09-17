@@ -17,6 +17,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	"github.com/techarm/celeritas/cache"
+	"github.com/techarm/celeritas/filesystems/miniofs"
 	"github.com/techarm/celeritas/mailer"
 	"github.com/techarm/celeritas/render"
 	"github.com/techarm/celeritas/session"
@@ -46,6 +47,7 @@ type Celeritas struct {
 	Scheduler     *cron.Cron
 	Mail          mailer.Mail
 	Server        Server
+	FileSystems   map[string]any
 	config        config
 }
 
@@ -199,6 +201,7 @@ func (c *Celeritas) New(rootPath string) error {
 	}
 
 	c.createRenderer()
+	c.FileSystems = c.createFileSystems()
 	go c.Mail.ListenFromMail()
 
 	return nil
@@ -350,4 +353,27 @@ func (c *Celeritas) BuildDSN() string {
 	}
 
 	return dsn
+}
+
+func (c *Celeritas) createFileSystems() map[string]any {
+	fileSystems := make(map[string]any)
+
+	if os.Getenv("MINIO_SECRET") != "" {
+		useSSL := false
+		if strings.ToLower(os.Getenv("MINIO_USESSL")) == "true" {
+			useSSL = true
+		}
+
+		minio := miniofs.Minio{
+			Endpoint: os.Getenv("MINIO_ENDPOINT"),
+			Key:      os.Getenv("MINIO_KEY"),
+			Secret:   os.Getenv("MINIO_SECRET"),
+			UseSSL:   useSSL,
+			Region:   os.Getenv("MINIO_REGION"),
+			Bucket:   os.Getenv("MINIO_BUCKET"),
+		}
+		fileSystems["MINIO"] = minio
+	}
+
+	return fileSystems
 }
