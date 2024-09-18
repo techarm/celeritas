@@ -53,6 +53,10 @@ func (m *Minio) List(prefix string) ([]filesystems.Listing, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	if prefix == "/" {
+		prefix = ""
+	}
+
 	client := m.getCredentials()
 	objectCh := client.ListObjects(ctx, m.Bucket, minio.ListObjectsOptions{
 		Prefix:    prefix,
