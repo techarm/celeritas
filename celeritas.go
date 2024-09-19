@@ -18,6 +18,7 @@ import (
 	"github.com/robfig/cron/v3"
 	"github.com/techarm/celeritas/cache"
 	"github.com/techarm/celeritas/filesystems/miniofs"
+	"github.com/techarm/celeritas/filesystems/s3fs"
 	"github.com/techarm/celeritas/filesystems/sftpfs"
 	"github.com/techarm/celeritas/filesystems/webdavfs"
 	"github.com/techarm/celeritas/mailer"
@@ -394,6 +395,17 @@ func (c *Celeritas) createFileSystems() map[string]any {
 			Pass: os.Getenv("WEBDAV_PASS"),
 		}
 		fileSystems["WEBDAV"] = webDav
+	}
+
+	if os.Getenv("S3_ENDPOINT") != "" {
+		s3 := s3fs.S3{
+			Key:      os.Getenv("S3_KEY"),
+			Secret:   os.Getenv("S3_SECRET"),
+			Region:   os.Getenv("S3_REGION"),
+			Endpoint: os.Getenv("S3_ENDPOINT"),
+			Bucket:   os.Getenv("S3_BUCKET"),
+		}
+		fileSystems["S3"] = s3
 	}
 
 	return fileSystems
