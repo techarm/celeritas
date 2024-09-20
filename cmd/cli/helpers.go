@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -63,17 +64,17 @@ func getDSN() string {
 
 func showHelp() {
 	color.Yellow(`Avaliable commands:
-	help                       - show the help commands
-	version                    - print application version
-	migrate                    - runs all up migrations that have not benn run previously
-	migrate down               - runs all down migrations in reverse order, and then all up migrations
-	migrate reset              - runs all down migrations in reverse order, and then all up migrations
-	make migration <name>      - creates two new up and down migrations in the migrations folder
-	make auth                  - creates and run migrations for authentication tables, and creates models and middles
-	make handler <name>        - creates a stub handler in the handers directory
-	make model <name>          - creates a new model in the models directory
-	make session               - creates a table in the database as a session store
-	make mail <name>           - creates two starter mail templates in the mail directory
+	help                               - show the help commands
+	version                            - print application version
+	migrate                            - runs all up migrations that have not benn run previously
+	migrate down                       - runs all down migrations in reverse order, and then all up migrations
+	migrate reset                      - runs all down migrations in reverse order, and then all up migrations
+	make migration <name> <format>     - creates two new up and down migrations in the migrations folder; format=sql/fizz (default: fizz)
+	make auth                          - creates and run migrations for authentication tables, and creates models and middles
+	make handler <name>                - creates a stub handler in the handers directory
+	make model <name>                  - creates a new model in the models directory
+	make session                       - creates a table in the database as a session store
+	make mail <name>                   - creates two starter mail templates in the mail directory
 	`)
 }
 
@@ -118,5 +119,19 @@ func updateSource() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func checkFroDB() error {
+	dbType := cel.DB.DataType
+
+	if dbType == "" {
+		return errors.New("no database connection provided in .env")
+	}
+
+	if !fileExists(cel.RootPath + "/config/database.yml") {
+		return errors.New("config/database.yml doest not exist")
+	}
+
 	return nil
 }
