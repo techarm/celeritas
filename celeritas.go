@@ -34,6 +34,7 @@ var redisPool *redis.Pool
 var badgerConn *badger.DB
 
 type Celeritas struct {
+	config        config
 	AppName       string
 	Debug         bool
 	Version       string
@@ -51,7 +52,10 @@ type Celeritas struct {
 	Mail          mailer.Mail
 	Server        Server
 	FileSystems   map[string]any
-	config        config
+	S3            s3fs.S3
+	SFTP          sftpfs.SFTP
+	WebDAV        webdavfs.WebDAV
+	Minio         miniofs.Minio
 }
 
 type Server struct {
@@ -68,6 +72,7 @@ type config struct {
 	sessionType string
 	database    databaseConfig
 	redis       redisConfig
+	uploads     uploadConfig
 }
 
 func (c *Celeritas) New(rootPath string) error {
@@ -136,6 +141,16 @@ func (c *Celeritas) New(rootPath string) error {
 	c.Routes = c.routes().(*chi.Mux)
 	c.Mail = c.createMailer()
 
+	// file uploads
+	mimeTypes := strings.Split(os.Getenv("ALLOWED_FILETYPES"), ",")
+
+	var maxUploadSize int64
+	if max, err := strconv.Atoi(os.Getenv("MAX_UPLOAD_SIZE")); err != nil {
+		maxUploadSize = 10 << 20
+	} else {
+		maxUploadSize = int64(max)
+	}
+
 	c.config = config{
 		port:     os.Getenv("PORT"),
 		renderer: os.Getenv("RENDERER"),
@@ -155,6 +170,10 @@ func (c *Celeritas) New(rootPath string) error {
 			host:     os.Getenv("REDIS_HOST"),
 			password: os.Getenv("REDIS_PASSWORD"),
 			prefix:   os.Getenv("REDIS_PREFIX"),
+		},
+		uploads: uploadConfig{
+			allowedMimeTypes: mimeTypes,
+			maxUploadSize:    maxUploadSize,
 		},
 	}
 
@@ -376,6 +395,7 @@ func (c *Celeritas) createFileSystems() map[string]any {
 			Bucket:   os.Getenv("MINIO_BUCKET"),
 		}
 		fileSystems["MINIO"] = minio
+		c.Minio = minio
 	}
 
 	if os.Getenv("SFTP_HOST") != "" {
@@ -386,6 +406,7 @@ func (c *Celeritas) createFileSystems() map[string]any {
 			Pass: os.Getenv("SFTP_PASS"),
 		}
 		fileSystems["SFTP"] = sftp
+		c.SFTP = sftp
 	}
 
 	if os.Getenv("WEBDAV_HOST") != "" {
@@ -395,6 +416,7 @@ func (c *Celeritas) createFileSystems() map[string]any {
 			Pass: os.Getenv("WEBDAV_PASS"),
 		}
 		fileSystems["WEBDAV"] = webDav
+		c.WebDAV = webDav
 	}
 
 	if os.Getenv("S3_ENDPOINT") != "" {
@@ -406,6 +428,7 @@ func (c *Celeritas) createFileSystems() map[string]any {
 			Bucket:   os.Getenv("S3_BUCKET"),
 		}
 		fileSystems["S3"] = s3
+		c.S3 = s3
 	}
 
 	return fileSystems

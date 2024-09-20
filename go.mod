@@ -11,9 +11,11 @@ require (
 	github.com/alexedwards/scs/v2 v2.8.0
 	github.com/alicebob/miniredis/v2 v2.33.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/bwmarrin/go-alone v0.0.0-20190806015146-742bb55d1631
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/fatih/color v1.17.0
+	github.com/gabriel-vasile/mimetype v1.4.5
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-git/go-git/v5 v5.12.0
@@ -28,9 +30,12 @@ require (
 	github.com/minio/minio-go/v7 v7.0.76
 	github.com/ory/dockertest/v3 v3.11.0
 	github.com/pkg/errors v0.9.1
+	github.com/pkg/sftp v1.13.6
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/studio-b12/gowebdav v0.9.0
 	github.com/vanng822/go-premailer v1.21.0
 	github.com/xhit/go-simple-mail/v2 v2.16.0
+	golang.org/x/crypto v0.27.0
 )
 
 require (
@@ -45,7 +50,6 @@ require (
 	github.com/SparkPost/gosparkpost v0.2.0 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
-	github.com/aws/aws-sdk-go v1.55.5 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -59,7 +63,6 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
@@ -103,14 +106,12 @@ require (
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runc v1.1.13 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
-	github.com/pkg/sftp v1.13.6 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/sendgrid/rest v2.6.3+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.8.0+incompatible // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.2.2 // indirect
-	github.com/studio-b12/gowebdav v0.9.0 // indirect
 	github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 // indirect
 	github.com/vanng822/css v1.0.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -120,7 +121,6 @@ require (
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
