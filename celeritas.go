@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"net/rpc"
 	"os"
 	"strconv"
@@ -242,36 +241,6 @@ func (c *Celeritas) Init(p initPaths) error {
 		}
 	}
 	return nil
-}
-
-func (c *Celeritas) ListenAndServe() {
-	maintenanceMode = false
-
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%s", c.config.port),
-		ErrorLog:     c.ErrorLog,
-		Handler:      c.Routes,
-		IdleTimeout:  30 * time.Second,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 600 * time.Second,
-	}
-
-	if c.DB.Pool != nil {
-		defer c.DB.Pool.Close()
-	}
-
-	if redisPool != nil {
-		defer redisPool.Close()
-	}
-
-	if badgerConn != nil {
-		defer badgerConn.Close()
-	}
-
-	go c.listenRPC()
-	c.InfoLog.Printf("Listening on port %s", c.config.port)
-	err := srv.ListenAndServe()
-	c.ErrorLog.Fatal(err)
 }
 
 func (c *Celeritas) checkDotEnv(path string) error {
