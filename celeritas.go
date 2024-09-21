@@ -3,7 +3,9 @@ package celeritas
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/rpc"
 	"os"
 	"strconv"
 	"strings"
@@ -32,6 +34,7 @@ var myRedisCache *cache.RedisCache
 var myBadgerCache *cache.BadgerCache
 var redisPool *redis.Pool
 var badgerConn *badger.DB
+var maintenanceMode bool
 
 type Celeritas struct {
 	config        config
@@ -242,6 +245,8 @@ func (c *Celeritas) Init(p initPaths) error {
 }
 
 func (c *Celeritas) ListenAndServe() {
+	maintenanceMode = false
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", c.config.port),
 		ErrorLog:     c.ErrorLog,
@@ -263,6 +268,7 @@ func (c *Celeritas) ListenAndServe() {
 		defer badgerConn.Close()
 	}
 
+	go c.listenRPC()
 	c.InfoLog.Printf("Listening on port %s", c.config.port)
 	err := srv.ListenAndServe()
 	c.ErrorLog.Fatal(err)
@@ -432,4 +438,46 @@ func (c *Celeritas) createFileSystems() map[string]any {
 	}
 
 	return fileSystems
+}
+
+type RPCServer struct{}
+
+func (r *RPCServer) MaintenanceMode(inMaintenanceMode bool, resp *string) error {
+	if inMaintenanceMode {
+		maintenanceMode = true
+		*resp = "Server in maintenance mode"
+	} else {
+		maintenanceMode = false
+		*resp = "Server live!"
+	}
+	return nil
+}
+
+func (c *Celeritas) listenRPC() {
+	// if nothing specified for rpc port, don't start
+	rpcPort := os.Getenv("RPC_PORT")
+	if rpcPort == "" {
+		return
+	}
+
+	c.InfoLog.Println("Starting RPC server on port: ", rpcPort)
+	err := rpc.Register(new(RPCServer))
+	if err != nil {
+		c.ErrorLog.Println(err)
+		return
+	}
+
+	listen, err := net.Listen("tcp", "127.0.0.1:"+rpcPort)
+	if err != nil {
+		c.ErrorLog.Println(err)
+		return
+	}
+
+	for {
+		rpcConn, err := listen.Accept()
+		if err != nil {
+			continue
+		}
+		go rpc.ServeConn(rpcConn)
+	}
 }
