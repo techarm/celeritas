@@ -8,7 +8,7 @@ import (
 	"github.com/techarm/celeritas"
 )
 
-const version = "1.0.0"
+const version = "0.2.0"
 
 var cel celeritas.Celeritas
 
