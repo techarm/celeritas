@@ -3,7 +3,8 @@ package celeritas
 import (
 	"fmt"
 	"log"
-	"net/http"
+	"net"
+	"net/rpc"
 	"os"
 	"strconv"
 	"strings"
@@ -17,6 +18,10 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	"github.com/techarm/celeritas/cache"
+	"github.com/techarm/celeritas/filesystems/miniofs"
+	"github.com/techarm/celeritas/filesystems/s3fs"
+	"github.com/techarm/celeritas/filesystems/sftpfs"
+	"github.com/techarm/celeritas/filesystems/webdavfs"
 	"github.com/techarm/celeritas/mailer"
 	"github.com/techarm/celeritas/render"
 	"github.com/techarm/celeritas/session"
@@ -28,8 +33,10 @@ var myRedisCache *cache.RedisCache
 var myBadgerCache *cache.BadgerCache
 var redisPool *redis.Pool
 var badgerConn *badger.DB
+var maintenanceMode bool
 
 type Celeritas struct {
+	config        config
 	AppName       string
 	Debug         bool
 	Version       string
@@ -46,7 +53,11 @@ type Celeritas struct {
 	Scheduler     *cron.Cron
 	Mail          mailer.Mail
 	Server        Server
-	config        config
+	FileSystems   map[string]any
+	S3            s3fs.S3
+	SFTP          sftpfs.SFTP
+	WebDAV        webdavfs.WebDAV
+	Minio         miniofs.Minio
 }
 
 type Server struct {
@@ -63,12 +74,13 @@ type config struct {
 	sessionType string
 	database    databaseConfig
 	redis       redisConfig
+	uploads     uploadConfig
 }
 
 func (c *Celeritas) New(rootPath string) error {
 	pathConfig := initPaths{
 		rootPath:    rootPath,
-		folderNames: []string{"handlers", "migrations", "views", "mail", "data", "public", "tmp", "logs", "middleware"},
+		folderNames: []string{"handlers", "migrations", "views", "mail", "data", "public", "tmp", "logs", "middleware", "screenshots"},
 	}
 
 	err := c.Init(pathConfig)
@@ -131,6 +143,16 @@ func (c *Celeritas) New(rootPath string) error {
 	c.Routes = c.routes().(*chi.Mux)
 	c.Mail = c.createMailer()
 
+	// file uploads
+	mimeTypes := strings.Split(os.Getenv("ALLOWED_FILETYPES"), ",")
+
+	var maxUploadSize int64
+	if max, err := strconv.Atoi(os.Getenv("MAX_UPLOAD_SIZE")); err != nil {
+		maxUploadSize = 10 << 20
+	} else {
+		maxUploadSize = int64(max)
+	}
+
 	c.config = config{
 		port:     os.Getenv("PORT"),
 		renderer: os.Getenv("RENDERER"),
@@ -150,6 +172,10 @@ func (c *Celeritas) New(rootPath string) error {
 			host:     os.Getenv("REDIS_HOST"),
 			password: os.Getenv("REDIS_PASSWORD"),
 			prefix:   os.Getenv("REDIS_PREFIX"),
+		},
+		uploads: uploadConfig{
+			allowedMimeTypes: mimeTypes,
+			maxUploadSize:    maxUploadSize,
 		},
 	}
 
@@ -199,6 +225,7 @@ func (c *Celeritas) New(rootPath string) error {
 	}
 
 	c.createRenderer()
+	c.FileSystems = c.createFileSystems()
 	go c.Mail.ListenFromMail()
 
 	return nil
@@ -214,33 +241,6 @@ func (c *Celeritas) Init(p initPaths) error {
 		}
 	}
 	return nil
-}
-
-func (c *Celeritas) ListenAndServe() {
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%s", c.config.port),
-		ErrorLog:     c.ErrorLog,
-		Handler:      c.Routes,
-		IdleTimeout:  30 * time.Second,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 600 * time.Second,
-	}
-
-	if c.DB.Pool != nil {
-		defer c.DB.Pool.Close()
-	}
-
-	if redisPool != nil {
-		defer redisPool.Close()
-	}
-
-	if badgerConn != nil {
-		defer badgerConn.Close()
-	}
-
-	c.InfoLog.Printf("Listening on port %s", c.config.port)
-	err := srv.ListenAndServe()
-	c.ErrorLog.Fatal(err)
 }
 
 func (c *Celeritas) checkDotEnv(path string) error {
@@ -350,4 +350,103 @@ func (c *Celeritas) BuildDSN() string {
 	}
 
 	return dsn
+}
+
+func (c *Celeritas) createFileSystems() map[string]any {
+	fileSystems := make(map[string]any)
+
+	if os.Getenv("MINIO_SECRET") != "" {
+		useSSL := false
+		if strings.ToLower(os.Getenv("MINIO_USESSL")) == "true" {
+			useSSL = true
+		}
+
+		minio := miniofs.Minio{
+			Endpoint: os.Getenv("MINIO_ENDPOINT"),
+			Key:      os.Getenv("MINIO_KEY"),
+			Secret:   os.Getenv("MINIO_SECRET"),
+			UseSSL:   useSSL,
+			Region:   os.Getenv("MINIO_REGION"),
+			Bucket:   os.Getenv("MINIO_BUCKET"),
+		}
+		fileSystems["MINIO"] = minio
+		c.Minio = minio
+	}
+
+	if os.Getenv("SFTP_HOST") != "" {
+		sftp := sftpfs.SFTP{
+			Host: os.Getenv("SFTP_HOST"),
+			Port: os.Getenv("SFTP_PORT"),
+			User: os.Getenv("SFTP_USER"),
+			Pass: os.Getenv("SFTP_PASS"),
+		}
+		fileSystems["SFTP"] = sftp
+		c.SFTP = sftp
+	}
+
+	if os.Getenv("WEBDAV_HOST") != "" {
+		webDav := webdavfs.WebDAV{
+			Host: os.Getenv("WEBDAV_HOST"),
+			User: os.Getenv("WEBDAV_USER"),
+			Pass: os.Getenv("WEBDAV_PASS"),
+		}
+		fileSystems["WEBDAV"] = webDav
+		c.WebDAV = webDav
+	}
+
+	if os.Getenv("S3_ENDPOINT") != "" {
+		s3 := s3fs.S3{
+			Key:      os.Getenv("S3_KEY"),
+			Secret:   os.Getenv("S3_SECRET"),
+			Region:   os.Getenv("S3_REGION"),
+			Endpoint: os.Getenv("S3_ENDPOINT"),
+			Bucket:   os.Getenv("S3_BUCKET"),
+		}
+		fileSystems["S3"] = s3
+		c.S3 = s3
+	}
+
+	return fileSystems
+}
+
+type RPCServer struct{}
+
+func (r *RPCServer) MaintenanceMode(inMaintenanceMode bool, resp *string) error {
+	if inMaintenanceMode {
+		maintenanceMode = true
+		*resp = "Server in maintenance mode"
+	} else {
+		maintenanceMode = false
+		*resp = "Server live!"
+	}
+	return nil
+}
+
+func (c *Celeritas) listenRPC() {
+	// if nothing specified for rpc port, don't start
+	rpcPort := os.Getenv("RPC_PORT")
+	if rpcPort == "" {
+		return
+	}
+
+	c.InfoLog.Println("Starting RPC server on port: ", rpcPort)
+	err := rpc.Register(new(RPCServer))
+	if err != nil {
+		c.ErrorLog.Println(err)
+		return
+	}
+
+	listen, err := net.Listen("tcp", "127.0.0.1:"+rpcPort)
+	if err != nil {
+		c.ErrorLog.Println(err)
+		return
+	}
+
+	for {
+		rpcConn, err := listen.Accept()
+		if err != nil {
+			continue
+		}
+		go rpc.ServeConn(rpcConn)
+	}
 }

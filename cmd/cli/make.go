@@ -2,17 +2,15 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/fatih/color"
 	"github.com/gertd/go-pluralize"
 	"github.com/iancoleman/strcase"
 )
 
-func doMake(arg2, arg3 string) error {
+func doMake(arg2, arg3, arg4 string) error {
 
 	switch arg2 {
 	case "key":
@@ -20,24 +18,50 @@ func doMake(arg2, arg3 string) error {
 		color.Yellow("32 character encryption key: %s", rnd)
 
 	case "migration":
-		dbType := cel.DB.DataType
+		err := checkFroDB()
+		if err != nil {
+			return err
+		}
+
 		if arg3 == "" {
 			return errors.New("you must give the migration a name")
 		}
 
-		fileName := fmt.Sprintf("%d_%s", time.Now().UnixMicro(), arg3)
-		upFile := cel.RootPath + "/migrations/" + fileName + "." + dbType + ".up.sql"
-		downFile := cel.RootPath + "/migrations/" + fileName + "." + dbType + ".down.sql"
+		// default to migration type of fizz
+		migrationType := "fizz"
+		var up, down []byte
 
-		err := copyFileFromTemplate("templates/migrations/migration."+dbType+".up.sql", upFile)
+		// are doing fizz or sql?
+		if arg4 == "fizz" || arg4 == "" {
+			up, _ = templateFS.ReadFile("templates/migrations/migration_up.fizz")
+			down, _ = templateFS.ReadFile("templates/migrations/migration_down.fizz")
+		} else {
+			migrationType = "sql"
+		}
+
+		// create the migrations for either fizz or sql
+		err = cel.CreatePopMigration(up, down, arg3, migrationType)
 		if err != nil {
 			return err
 		}
 
-		err = copyFileFromTemplate("templates/migrations/migration."+dbType+".down.sql", downFile)
-		if err != nil {
-			return err
-		}
+		// ---------------
+		// golang-migrate
+		// ---------------
+
+		// fileName := fmt.Sprintf("%d_%s", time.Now().UnixMicro(), arg3)
+		// upFile := cel.RootPath + "/migrations/" + fileName + "." + dbType + ".up.sql"
+		// downFile := cel.RootPath + "/migrations/" + fileName + "." + dbType + ".down.sql"
+
+		// err := copyFileFromTemplate("templates/migrations/migration."+dbType+".up.sql", upFile)
+		// if err != nil {
+		// 	return err
+		// }
+
+		// err = copyFileFromTemplate("templates/migrations/migration."+dbType+".down.sql", downFile)
+		// if err != nil {
+		// 	return err
+		// }
 
 	case "auth":
 		err := doAuth()

@@ -124,9 +124,17 @@ func doNew(appName string) error {
 		return err
 	}
 
+	// install celeritas package
+	color.Yellow("\tRunning go get package...")
+	cmd := exec.Command("go", "get", "github.com/techarm/celeritas")
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+
 	// run go mod tidy in the project directory
 	color.Yellow("\tRunning go mod tidy...")
-	cmd := exec.Command("go", "mod", "tidy")
+	cmd = exec.Command("go", "mod", "tidy")
 	err = cmd.Start()
 	if err != nil {
 		return err
